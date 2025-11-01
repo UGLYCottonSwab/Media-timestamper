@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Timestamp Notes">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>Media Timestamp Notes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #1a1a1a;
+            color: #ffffff;
+            padding: 10px;
+            padding-bottom: 80px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .file-section {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .file-input-wrapper {
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background: #3a3a3a;
+            border: 2px solid #4a4a4a;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .playlist {
+            max-height: 150px;
+            overflow-y: auto;
+            background: #3a3a3a;
+            border-radius: 5px;
+            padding: 5px;
+        }
+
+        .playlist-item {
+            padding: 8px;
+            margin: 3px 0;
+            background: #4a4a4a;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .playlist-item.active {
+            background: #1db954;
+        }
+
+        .playlist-item:active {
+            opacity: 0.7;
+        }
+
+        .video-container {
+            width: 100%;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        video, audio {
+            width: 100%;
+            display: block;
+        }
+
+        audio {
+            height: 60px;
+        }
+
+        .custom-scrubber {
+            background: #2a2a2a;
+            padding: 20px 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .scrubber-track {
+            position: relative;
+            height: 60px;
+            background: #3a3a3a;
+            border-radius: 8px;
+            cursor: pointer;
+            touch-action: none;
+            overflow: hidden;
+        }
+
+        .scrubber-progress {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #1db954, #1ed760);
+            border-radius: 8px 0 0 8px;
+            pointer-events: none;
+        }
+
+        .scrubber-handle {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: #ffffff;
+            border: 4px solid #1db954;
+            border-radius: 50%;
+            cursor: grab;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            z-index: 10;
+            touch-action: none;
+        }
+
+        .scrubber-handle:active {
+            cursor: grabbing;
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        .scrubber-timestamps {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .scrubber-marker {
+            position: absolute;
+            width: 3px;
+            height: 100%;
+            background: #ff6600;
+            opacity: 0.7;
+        }
+
+        .scrubber-marker::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -3px;
+            width: 9px;
+            height: 12px;
+            background: #ff6600;
+            border-radius: 0 0 4px 4px;
+        }
+
+        .controls {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .time-display {
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            font-family: monospace;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            min-width: 70px;
+            padding: 12px;
+            background: #1db954;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        button:active {
+            background: #1aa34a;
+        }
+
+        button.secondary {
+            background: #4a4a4a;
+        }
+
+        button.secondary:active {
+            background: #3a3a3a;
+        }
+
+        button.speed-btn {
+            background: #cc6600;
+        }
+
+        button.speed-btn:active {
+            background: #994d00;
+        }
+
+        button.speed-btn.active {
+            background: #ff8800;
+        }
+
+        .timestamp-section {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .timestamp-input-group {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            background: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            background: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 14px;
+            resize: vertical;
+            min-height: 80px;
+            margin-bottom: 10px;
+        }
+
+        .timestamps-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .timestamp-item {
+            background: #3a3a3a;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 5px;
+            border-left: 4px solid #1db954;
+        }
+
+        .timestamp-item.editing {
+            background: #4a4a4a;
+            border-left-color: #ff8800;
+        }
+
+        .timestamp-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+
+        .timestamp-time {
+            font-weight: bold;
+            color: #1ed760;
+            cursor: pointer;
+            font-family: monospace;
+        }
+
+        .timestamp-time:active {
+            color: #1db954;
+        }
+
+        .timestamp-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .small-btn {
+            padding: 4px 8px;
+            font-size: 12px;
+            min-width: auto;
+        }
+
+        .timestamp-note {
+            color: #cccccc;
+            font-size: 14px;
+            word-wrap: break-word;
+            margin-bottom: 5px;
+        }
+
+        .timestamp-edit-form {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #4a4a4a;
+        }
+
+        .timestamp-edit-form textarea {
+            margin-bottom: 5px;
+            min-height: 60px;
+        }
+
+        .timestamp-edit-form input {
+            margin-bottom: 5px;
+        }
+
+        .edit-buttons {
+            display: flex;
+            gap: 5px;
+        }
+
+        .export-section {
+            background: #2a2a2a;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .export-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        select {
+            flex: 1;
+            padding: 10px;
+            background: #3a3a3a;
+            border: 1px solid #4a4a4a;
+            border-radius: 5px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .current-file-name {
+            font-size: 16px;
+            color: #1ed760;
+            margin-bottom: 10px;
+            text-align: center;
+            word-wrap: break-word;
+        }
+
+        .no-media {
+            text-align: center;
+            padding: 40px;
+            color: #888;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 5px;
+                padding-bottom: 80px;
+            }
+
+            h1 {
+                font-size: 20px;
+            }
+
+            button {
+                min-width: 60px;
+                padding: 10px;
+                font-size: 13px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>🎬 Media Timestamp Notes</h1>
+
+    <div class="file-section">
+        <div class="file-input-wrapper">
+            <input type="file" id="fileInput" accept="audio/*,video/*" multiple>
+        </div>
+        <div class="playlist" id="playlist"></div>
+    </div>
+
+    <div class="current-file-name" id="currentFileName"></div>
+
+    <div class="video-container" id="mediaContainer">
+        <div class="no-media">Load a media file to begin</div>
+    </div>
+
+    <div class="custom-scrubber" id="customScrubber" style="display: none;">
+        <div class="scrubber-track" id="scrubberTrack">
+            <div class="scrubber-timestamps" id="scrubberTimestamps"></div>
+            <div class="scrubber-progress" id="scrubberProgress"></div>
+            <div class="scrubber-handle" id="scrubberHandle"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="time-display" id="timeDisplay">00:00:00 / 00:00:00</div>
+        
+        <div class="button-row">
+            <button id="playPauseBtn" disabled>▶️ Play</button>
+            <button id="speed2xBtn" class="speed-btn" disabled>2x Speed (Hold)</button>
+        </div>
+
+        <div class="button-row">
+            <button id="backBtn" class="secondary" disabled>⏪ -5s</button>
+            <button id="forwardBtn" class="secondary" disabled>⏩ +5s</button>
+        </div>
+
+        <div class="button-row">
+            <button id="back30Btn" class="secondary" disabled>↩️ -30s</button>
+            <button id="forward30Btn" class="secondary" disabled>↪️ +30s</button>
+        </div>
+    </div>
+
+    <div class="timestamp-section">
+        <h2 style="margin-bottom: 10px;">Timestamps</h2>
+        
+        <div class="timestamp-input-group">
+            <input type="text" id="endTimeInput" placeholder="End time (optional)">
+            <button id="addTimestampBtn" disabled>➕ Add Timestamp</button>
+        </div>
+
+        <textarea id="noteInput" placeholder="Type your note here..."></textarea>
+
+        <div class="timestamps-list" id="timestampsList"></div>
+    </div>
+
+    <div class="export-section">
+        <h2 style="margin-bottom: 10px;">Export / Import</h2>
+        
+        <div class="export-row">
+            <select id="exportFormat">
+                <option value="json">JSON</option>
+                <option value="srt">SRT</option>
+                <option value="txt">TXT</option>
+            </select>
+            <button id="exportBtn" class="secondary" disabled>💾 Export</button>
+        </div>
+
+        <div class="export-row">
+            <input type="file" id="importInput" accept=".json,.srt,.txt">
+        </div>
+    </div>
+
+    <script>
+        // App State
+        let mediaElement = null;
+        let currentMediaFile = null;
+        let currentFileName = '';
+        let playlist = [];
+        let currentPlaylistIndex = -1;
+        let timestamps = [];
+        let normalSpeed = 1.0;
+        let is2xActive = false;
+        let skipSeconds = 5;
+        let isDragging = false;
+        let editingIndex = -1;
+
+        // DOM Elements
+        const fileInput = document.getElementById('fileInput');
+        const playlistDiv = document.getElementById('playlist');
+        const mediaContainer = document.getElementById('mediaContainer');
+        const currentFileNameDiv = document.getElementById('currentFileName');
+        const customScrubber = document.getElementById('customScrubber');
+        const scrubberTrack = document.getElementById('scrubberTrack');
+        const scrubberProgress = document.getElementById('scrubberProgress');
+        const scrubberHandle = document.getElementById('scrubberHandle');
+        const scrubberTimestamps = document.getElementById('scrubberTimestamps');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const playPauseBtn = document.getElementById('playPauseBtn');
+        const speed2xBtn = document.getElementById('speed2xBtn');
+        const backBtn = document.getElementById('backBtn');
+        const forwardBtn = document.getElementById('forwardBtn');
+        const back30Btn = document.getElementById('back30Btn');
+        const forward30Btn = document.getElementById('forward30Btn');
+        const addTimestampBtn = document.getElementById('addTimestampBtn');
+        const endTimeInput = document.getElementById('endTimeInput');
+        const noteInput = document.getElementById('noteInput');
+        const timestampsList = document.getElementById('timestampsList');
+        const exportBtn = document.getElementById('exportBtn');
+        const exportFormat = document.getElementById('exportFormat');
+        const importInput = document.getElementById('importInput');
+
+        // Initialize
+        loadFromLocalStorage();
+
+        // File Input Handler
+        fileInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) {
+                playlist = files;
+                renderPlaylist();
+                loadMedia(0);
+            }
+        });
+
+        // Render Playlist
+        function renderPlaylist() {
+            playlistDiv.innerHTML = '';
+            playlist.forEach((file, index) => {
+                const item = document.createElement('div');
+                item.className = 'playlist-item';
+                if (index === currentPlaylistIndex) {
+                    item.classList.add('active');
+                }
+                item.innerHTML = `
+                    <span>${file.name}</span>
+                    <span>${index + 1}/${playlist.length}</span>
+                `;
+                item.addEventListener('click', () => loadMedia(index));
+                playlistDiv.appendChild(item);
+            });
+        }
+
+        // Load Media
+        function loadMedia(index) {
+            if (index < 0 || index >= playlist.length) return;
+
+            currentPlaylistIndex = index;
+            currentMediaFile = playlist[index];
+            currentFileName = currentMediaFile.name;
+
+            // Remove existing media element
+            if (mediaElement) {
+                mediaElement.remove();
+            }
+
+            // Create new media element
+            const url = URL.createObjectURL(currentMediaFile);
+            const isVideo = currentMediaFile.type.startsWith('video');
+            
+            mediaElement = document.createElement(isVideo ? 'video' : 'audio');
+            mediaElement.src = url;
+            mediaElement.controls = false;
+            if (isVideo) {
+                mediaElement.style.maxHeight = '400px';
+            }
+
+            mediaContainer.innerHTML = '';
+            mediaContainer.appendChild(mediaElement);
+
+            currentFileNameDiv.textContent = currentFileName;
+
+            // Show custom scrubber
+            customScrubber.style.display = 'block';
+
+            // Enable controls
+            playPauseBtn.disabled = false;
+            speed2xBtn.disabled = false;
+            backBtn.disabled = false;
+            forwardBtn.disabled = false;
+            back30Btn.disabled = false;
+            forward30Btn.disabled = false;
+            addTimestampBtn.disabled = false;
+            exportBtn.disabled = false;
+
+            // Add event listeners
+            mediaElement.addEventListener('timeupdate', updateTimeDisplay);
+            mediaElement.addEventListener('timeupdate', updateScrubber);
+            mediaElement.addEventListener('loadedmetadata', () => {
+                updateTimeDisplay();
+                updateScrubber();
+                loadTimestampsForFile();
+            });
+
+            renderPlaylist();
+        }
+
+        // Custom Scrubber Logic
+        function updateScrubber() {
+            if (!mediaElement || !mediaElement.duration) return;
+            
+            const percent = (mediaElement.currentTime / mediaElement.duration) * 100;
+            scrubberProgress.style.width = percent + '%';
+            scrubberHandle.style.left = percent + '%';
+
+            // Update timestamp markers
+            renderScrubberMarkers();
+        }
+
+        function renderScrubberMarkers() {
+            if (!mediaElement || !mediaElement.duration) return;
+            
+            scrubberTimestamps.innerHTML = '';
+            const currentFileTimestamps = timestamps.filter(t => t.fileName === currentFileName);
+            
+            currentFileTimestamps.forEach(ts => {
+                const percent = (ts.time / mediaElement.duration) * 100;
+                const marker = document.createElement('div');
+                marker.className = 'scrubber-marker';
+                marker.style.left = percent + '%';
+                scrubberTimestamps.appendChild(marker);
+            });
+        }
+
+        function seekToPosition(clientX) {
+            if (!mediaElement) return;
+            
+            const rect = scrubberTrack.getBoundingClientRect();
+            const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+            mediaElement.currentTime = percent * mediaElement.duration;
+            updateScrubber();
+        }
+
+        // Scrubber events
+        scrubberTrack.addEventListener('click', (e) => {
+            if (!isDragging) {
+                seekToPosition(e.clientX);
+            }
+        });
+
+        scrubberHandle.addEventListener('mousedown', startDrag);
+        scrubberHandle.addEventListener('touchstart', startDrag);
+
+        function startDrag(e) {
+            e.preventDefault();
+            isDragging = true;
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            document.addEventListener('touchend', stopDrag);
+        }
+
+        function drag(e) {
+            if (!isDragging) return;
+            e.preventDefault();
+            const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+            seekToPosition(clientX);
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            document.removeEventListener('mousemove', drag);
+            document.removeEventListener('touchmove', drag);
+            document.removeEventListener('mouseup', stopDrag);
+            document.removeEventListener('touchend', stopDrag);
+        }
+
+        // Time Display
+        function updateTimeDisplay() {
+            if (!mediaElement) return;
+            const current = formatTime(mediaElement.currentTime);
+            const duration = formatTime(mediaElement.duration);
+            timeDisplay.textContent = `${current} / ${duration}`;
+        }
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return '00:00:00';
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+        }
+
+        function parseTime(timeStr) {
+            const parts = timeStr.split(':').map(p => parseInt(p) || 0);
+            if (parts.length === 3) {
+                return parts[0] * 3600 + parts[1] * 60 + parts[2];
+            } else if (parts.length === 2) {
+                return parts[0] * 60 + parts[1];
+            } else {
+                return parts[0] || 0;
+            }
+        }
+
+        // Playback Controls
+        playPauseBtn.addEventListener('click', () => {
+            if (!mediaElement) return;
+            if (mediaElement.paused) {
+                mediaElement.play();
+                playPauseBtn.textContent = '⏸️ Pause';
+            } else {
+                mediaElement.pause();
+                playPauseBtn.textContent = '▶️ Play';
+            }
+        });
+
+        // 2x Speed (Hold)
+        speed2xBtn.addEventListener('mousedown', activate2x);
+        speed2xBtn.addEventListener('touchstart', activate2x);
+        speed2xBtn.addEventListener('mouseup', deactivate2x);
+        speed2xBtn.addEventListener('touchend', deactivate2x);
+        speed2xBtn.addEventListener('mouseleave', deactivate2x);
+
+        function activate2x(e) {
+            e.preventDefault();
+            if (!mediaElement || is2xActive) return;
+            is2xActive = true;
+            mediaElement.playbackRate = 2.0;
+            speed2xBtn.classList.add('active');
+        }
+
+        function deactivate2x(e) {
+            e.preventDefault();
+            if (!mediaElement || !is2xActive) return;
+            is2xActive = false;
+            mediaElement.playbackRate = normalSpeed;
+            speed2xBtn.classList.remove('active');
+        }
+
+        // Skip Controls
+        backBtn.addEventListener('click', () => {
+            if (!mediaElement) return;
+            mediaElement.currentTime = Math.max(0, mediaElement.currentTime - skipSeconds);
+        });
+
+        forwardBtn.addEventListener('click', () => {
+            if (!mediaElement) return;
+            mediaElement.currentTime = Math.min(mediaElement.duration, mediaElement.currentTime + skipSeconds);
+        });
+
+        back30Btn.addEventListener('click', () => {
+            if (!mediaElement) return;
+            mediaElement.currentTime = Math.max(0, mediaElement.currentTime - 30);
+        });
+
+        forward30Btn.addEventListener('click', () => {
+            if (!mediaElement) return;
+            mediaElement.currentTime = Math.min(mediaElement.duration, mediaElement.currentTime + 30);
+        });
+
+        // Add Timestamp
+        addTimestampBtn.addEventListener('click', () => {
+            if (!mediaElement) return;
+
+            const wasPaused = mediaElement.paused;
+            if (!wasPaused) {
+                mediaElement.pause();
+                playPauseBtn.textContent = '▶️ Play';
+            }
+
+            const timestamp = {
+                time: mediaElement.currentTime,
+                endTime: endTimeInput.value.trim(),
+                note: noteInput.value.trim(),
+                fileName: currentFileName
+            };
+
+            timestamps.push(timestamp);
+            timestamps.sort((a, b) => a.time - b.time);
+
+            noteInput.value = '';
+            endTimeInput.value = '';
+
+            renderTimestamps();
+            saveToLocalStorage();
+        });
+
+        // Render Timestamps with Inline Editing
+        function renderTimestamps() {
+            const currentFileTimestamps = timestamps.filter(t => t.fileName === currentFileName);
+            
+            timestampsList.innerHTML = '';
+            
+            if (currentFileTimestamps.length === 0) {
+                timestampsList.innerHTML = '<div style="text-align: center; color: #888; padding: 20px;">No timestamps yet. Click "Add Timestamp" to create one.</div>';
+                return;
+            }
+
+            currentFileTimestamps.forEach((ts, localIndex) => {
+                const globalIndex = timestamps.indexOf(ts);
+                const item = document.createElement('div');
+                item.className = 'timestamp-item';
+                if (editingIndex === globalIndex) {
+                    item.classList.add('editing');
+                }
+                
+                const timeRange = ts.endTime ? `${formatTime(ts.time)} - ${ts.endTime}` : formatTime(ts.time);
+                
+                if (editingIndex === globalIndex) {
+                    // Edit mode
+                    item.innerHTML = `
+                        <div class="timestamp-header">
+                            <span class="timestamp-time" data-time="${ts.time}">${timeRange}</span>
+                            <div class="timestamp-actions">
+                                <button class="small-btn secondary cancel-edit-btn">✖️</button>
+                            </div>
+                        </div>
+                        <div class="timestamp-edit-form">
+                            <textarea id="editNote${globalIndex}" placeholder="Edit your note...">${ts.note || ''}</textarea>
+                            <input type="text" id="editEndTime${globalIndex}" placeholder="End time (optional)" value="${ts.endTime || ''}">
+                            <div class="edit-buttons">
+                                <button class="small-btn save-edit-btn" data-index="${globalIndex}">💾 Save</button>
+                                <button class="small-btn secondary cancel-edit-btn">Cancel</button>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    // View mode
+                    item.innerHTML = `
+                        <div class="timestamp-header">
+                            <span class="timestamp-time" data-time="${ts.time}">${timeRange}</span>
+                            <div class="timestamp-actions">
+                                <button class="small-btn secondary edit-btn" data-index="${globalIndex}">✏️</button>
+                                <button class="small-btn secondary delete-btn" data-index="${globalIndex}">🗑️</button>
+                            </div>
+                        </div>
+                        <div class="timestamp-note">${ts.note || '<em>No note</em>'}</div>
+                    `;
+                }
+                
+                timestampsList.appendChild(item);
+            });
+
+            // Add event listeners
+            document.querySelectorAll('.timestamp-time').forEach(el => {
+                el.addEventListener('click', () => {
+                    if (mediaElement && editingIndex === -1) {
+                        mediaElement.currentTime = parseFloat(el.dataset.time);
+                    }
+                });
+            });
+
+            document.querySelectorAll('.edit-btn').forEach(el => {
+                el.addEventListener('click', () => {
+                    const index = parseInt(el.dataset.index);
+                    startEditTimestamp(index);
+                });
+            });
+
+            document.querySelectorAll('.save-edit-btn').forEach(el => {
+                el.addEventListener('click', () => {
+                    const index = parseInt(el.dataset.index);
+                    saveEditTimestamp(index);
+                });
+            });
+
+            document.querySelectorAll('.cancel-edit-btn').forEach(el => {
+                el.addEventListener('click', () => {
+                    cancelEditTimestamp();
+                });
+            });
+
+            document.querySelectorAll('.delete-btn').forEach(el => {
+                el.addEventListener('click', () => {
+                    const index = parseInt(el.dataset.index);
+                    deleteTimestamp(index);
+                });
+            });
+
+            // Update scrubber markers
+            renderScrubberMarkers();
+        }
+
+        function startEditTimestamp(index) {
+            editingIndex = index;
+            renderTimestamps();
+        }
+
+        function saveEditTimestamp(index) {
+            const noteTextarea = document.getElementById(`editNote${index}`);
+            const endTimeInput = document.getElementById(`editEndTime${index}`);
+            
+            if (noteTextarea && endTimeInput) {
+                timestamps[index].note = noteTextarea.value.trim();
+                timestamps[index].endTime = endTimeInput.value.trim();
+                editingIndex = -1;
+                renderTimestamps();
+                saveToLocalStorage();
+            }
+        }
+
+        function cancelEditTimestamp() {
+            editingIndex = -1;
+            renderTimestamps();
+        }
+
+        function deleteTimestamp(index) {
+            if (confirm('Delete this timestamp?')) {
+                timestamps.splice(index, 1);
+                editingIndex = -1;
+                renderTimestamps();
+                saveToLocalStorage();
+            }
+        }
+
+        // Export
+        exportBtn.addEventListener('click', () => {
+            const format = exportFormat.value;
+            const currentFileTimestamps = timestamps.filter(t => t.fileName === currentFileName);
+            
+            let content = '';
+            let filename = currentFileName.replace(/\.[^/.]+$/, '') + '_timestamps';
+            let mimeType = 'text/plain';
+
+            if (format === 'json') {
+                content = JSON.stringify({
+                    fileName: currentFileName,
+                    timestamps: currentFileTimestamps
+                }, null, 2);
+                filename += '.json';
+                mimeType = 'application/json';
+            } else if (format === 'srt') {
+                content = toSRT(currentFileTimestamps);
+                filename += '.srt';
+            } else if (format === 'txt') {
+                content = toTXT(currentFileTimestamps);
+                filename += '.txt';
+            }
+
+            downloadFile(content, filename, mimeType);
+        });
+
+        function toSRT(timestamps) {
+            let srt = '';
+            timestamps.forEach((ts, i) => {
+                const start = formatSRTTime(ts.time);
+                const end = ts.endTime ? formatSRTTime(parseTime(ts.endTime)) : formatSRTTime(ts.time + 5);
+                srt += `${i + 1}\n${start} --> ${end}\n${ts.note || ''}\n\n`;
+            });
+            return srt;
+        }
+
+        function formatSRTTime(seconds) {
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            const ms = Math.floor((seconds % 1) * 1000);
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')},${String(ms).padStart(3, '0')}`;
+        }
+
+        function toTXT(timestamps) {
+            let txt = `Timestamps for: ${currentFileName}\n\n`;
+            timestamps.forEach(ts => {
+                const timeRange = ts.endTime ? `${formatTime(ts.time)} - ${ts.endTime}` : formatTime(ts.time);
+                txt += `[${timeRange}]\n${ts.note || ''}\n\n`;
+            });
+            return txt;
+        }
+
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Import
+        importInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const content = event.target.result;
+                    
+                    if (file.name.endsWith('.json')) {
+                        const data = JSON.parse(content);
+                        if (data.timestamps && Array.isArray(data.timestamps)) {
+                            // Remove existing timestamps for this file
+                            timestamps = timestamps.filter(t => t.fileName !== data.fileName);
+                            // Add imported timestamps
+                            timestamps.push(...data.timestamps);
+                            timestamps.sort((a, b) => a.time - b.time);
+                            
+                            renderTimestamps();
+                            saveToLocalStorage();
+                            alert('Timestamps imported successfully!');
+                        }
+                    } else {
+                        alert('Currently only JSON import is supported.');
+                    }
+                } catch (err) {
+                    alert('Error importing file: ' + err.message);
+                }
+            };
+            reader.readAsText(file);
+            
+            // Reset input
+            importInput.value = '';
+        });
+
+        // Local Storage
+        function saveToLocalStorage() {
+            localStorage.setItem('mediaTimestamps', JSON.stringify(timestamps));
+        }
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem('mediaTimestamps');
+            if (saved) {
+                try {
+                    timestamps = JSON.parse(saved);
+                } catch (err) {
+                    console.error('Error loading from localStorage:', err);
+                }
+            }
+        }
+
+        function loadTimestampsForFile() {
+            renderTimestamps();
+        }
+
+        // Auto-save on page unload
+        window.addEventListener('beforeunload', saveToLocalStorage);
+    </script>
+</body>
+</html>
